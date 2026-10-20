@@ -20,7 +20,8 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "check": "node scripts/check.ts",
-    "check:terms": "node scripts/check-terms.ts"
+    "check:terms": "node scripts/check-terms.ts",
+    "check:examples": "node scripts/check-examples.ts"
   },
   "peerDependencies": {
     "viem": "^2.30.0"
@@ -38,5 +39,5 @@
     "type": "git",
     "url": "git+https://github.com/kylebolton/liquyn-sdk.git"
   },
-  "homepage": "https://www.liquyn.com/developers"
+  "homepage": "https://www.liquyn.com/platform/developers"
 }

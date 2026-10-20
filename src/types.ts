@@ -73,7 +73,7 @@ export type CurveResponse = {
   updatedAt: number;
   curve: Record<LentAsset, CurvePoint[]>;
   benchmark: { source: string; supplyApyBps: number; borrowApyBps: number; utilization: number } | null;
-  policy: { live: false; note: string; quotes: { USDC: PolicyQuote[] | null; HYPE: { loop: PolicyQuote[]; dollar: PolicyQuote[] } } };
+  policy: { live: false; note: string; quotes: { USDC: PolicyQuote[] | null; refinance?: PolicyQuote[] | null; HYPE: { loop: PolicyQuote[]; dollar: PolicyQuote[] } } };
 };
 
 export type Quote = {
@@ -135,6 +135,7 @@ export type StatusResponse = {
   contracts: {
     legacyFeeSplitter: Address | null;
     idleUsdcAdapter: Address | null;
+    termEarnRouter?: Address | null;
     termLocks: { DEC26: Address | null; MAR27: Address | null; JUN27: Address | null };
     lqUSDC: Address | null; sLqUSDC: Address | null; lqHYPE: Address | null; sLqHYPE: Address | null; feeSplitter: Address | null;
     borrowToCore: Address | null; termRfq: Address | null; partnerTerms: Address | null; lqUsdcExitDesk: Address | null; liqynFeeRewards: Address | null;

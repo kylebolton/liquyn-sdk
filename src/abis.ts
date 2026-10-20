@@ -274,3 +274,12 @@ export const sLqUsdcAbi = parseAbi([
   "event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares)",
   "event Withdraw(address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares)",
 ]);
+
+export const termEarnRouterAbi = parseAbi([
+  "function usdc() view returns (address)",
+  "function lqUSDC() view returns (address)",
+  "function supported(address term) view returns (bool)",
+  "function depositUsdc(address term, uint256 assets, uint256 minFace, uint256 deadline) returns (uint256 face)",
+  "function claimUsdc(address term, uint256 face, uint256 minUsdc, uint256 deadline) returns (uint256 assets)",
+  "function claimLq(address term, uint256 face, uint256 minLq, uint256 deadline) returns (uint256 assets)",
+]);

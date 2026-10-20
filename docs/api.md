@@ -102,6 +102,7 @@ The term curve: for each lent asset, one point per maturity from live markets, s
     "note": "What Liquyn's rate policy would set for pools opened now. …",
     "quotes": {
       "USDC": [{ "term": 30, "lenderAprBps": 425, "borrowerAprBps": 550, "originationFeeBps": 5, "benchmarkSupplyBps": 353 }],
+      "refinance": [{ "term": 30, "lenderAprBps": 550, "borrowerAprBps": 675, "originationFeeBps": 5, "benchmarkSupplyBps": 353 }],
       "HYPE": { "loop": [], "dollar": [] }
     }
   }
@@ -110,7 +111,7 @@ The term curve: for each lent asset, one point per maturity from live markets, s
 
 - `allInBorrowerAprBps` is the cost of a new loan held to maturity, interest plus the upfront fee, annualized over the time left: `((1 + APR/31,536,000)^remaining ÷ (1 − fee) − 1) × year ÷ remaining`. Short remaining times make the fee weigh more.
 - `benchmark` is HyperCore's live USDC lending rates. Liquyn sets USDC rates from the supply rate plus a margin. It is `null` if the precompile cannot be read.
-- `policy` is what the rate policy would set for a pool opened now. These numbers are **not live and cannot be traded**. Pool rates are fixed once, when each pool opens.
+- `policy` is what the rate policy would set for a pool opened now. These numbers are **not live and cannot be traded**. Pool rates are fixed once, when each pool opens. `quotes.refinance` is the same USDC schedule with the larger lender premium planned for a separate market that takes loans moved off HyperLend.
 
 ### `GET /quote?market=0x…&amount=10000`
 
@@ -264,6 +265,14 @@ const tx = fillQuote({ quote, signature, rfqAddress, minReceived: 99_850_000_000
 await takerWallet.sendTransaction(tx);
 ```
 
+### Quote board (optional)
+
+Instead of sharing quotes directly, a maker can post a signed quote where takers will find it. The board stores signatures only. It never holds funds, and settlement is always `TermRFQ`.
+
+- `GET /rfq/quotes` returns live quotes for the Liquyn term tokens (add `?maker=0x…` for one maker's quotes, including any not currently covered, flagged `covered: false`), plus each term token's `issuance` (`open`, posted `rateBps`, `faceLeft`), asks lowest price first, then bids highest first. Each has `price` (pay token per 1 face), `impliedApr` (simple, to maturity), `remainingFace`, the `quote` fields (decimal strings) and its `signature`. Quotes that are expired, cancelled, filled or no longer covered by the maker's balance and allowance are left out.
+- `POST /rfq/quotes` with `{ "quote": { maker, taker, sellToken, buyToken, sellAmount, buyAmount, expiry, nonce }, "signature": "0x…" }`. Amounts, expiry and nonce are decimal strings. The quote must trade a term token against lqUSDC or USDC, expire within 24 hours, carry the maker's signature for the deployed `TermRFQ` (EOA or EIP-1271), and be covered by the maker's balance and allowance. A maker may have 20 live quotes; requests are rate limited. Errors return `{ error, message }`.
+- Removing a quote from the board is not a cancel. Cancel on chain with `cancel(nonce)` or `cancelBelow(nonce)`.
+
 ## Term tokens and junior cover (`TermLock`)
 
 A `TermLock` is a fixed-rate term token for one calendar maturity, for example `lqUSDC-DEC26`. Maturities fall on the last Friday of March, June, September and December at 08:00 UTC.
@@ -303,4 +312,10 @@ Other `PartnerTerms` settings borrowers may see: an origination-fee discount (th
 - Prices come from HyperCore feeds through Liquyn's oracle contracts. A stale feed (over 300 seconds) blocks borrowing, collateral withdrawals and liquidations until it updates.
 - The positions endpoint scans a bounded window of logs. Do not treat it as a complete list unless `scan.complete` is `true` and `scan.fromBlock` is at or before the market's deployment block.
 
-See [Risks](risks.md) for the protocol-level risks.
+See [Risks](https://github.com/kylebolton/liquyn/blob/main/docs/risks.md) for the protocol-level risks.
+
+### Fixed-term Earn router
+
+`GET /api/v1/status` adds optional `contracts.termEarnRouter` (null until configured). The SDK exports `termEarnRouterAbi`, `readTermPosition`, `termFace` and `maxTermDeposit`. `readTermPosition` rejects failed reads and returns token balance, maturity/settlement state and a lqUSDC claim preview; an unsettled preview is indicative. Monetary SDK values are bigint token units. `maxTermDeposit` converts face headroom to deposit units; USDC entry must also pass shared-pool deposit/backing/cap checks and a fresh transaction simulation.
+
+The immutable router supports `depositUsdc(term, assets, minFace, deadline)`, `claimUsdc(term, face, minUsdc, deadline)` and `claimLq(term, face, minLq, deadline)`. Approve the input token separately. Outputs always go to the caller. A failed cash claim rolls back completely; choose the lqUSDC alternative explicitly. Configuration and activation: [router activation runbook](https://github.com/kylebolton/liquyn/blob/e81e27a798822b4db491bfcce6e69265686b5538/internal/term-earn-runbook.md).
