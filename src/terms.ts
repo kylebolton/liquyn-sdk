@@ -11,6 +11,7 @@ const offerAbi = parseAbi([
   "function settled() view returns (bool)",
   "function decimals() view returns (uint8)",
   "function stakedLq() view returns (address)",
+  "function lq() view returns (address)",
   "function stakedShares() view returns (uint256)",
 ]);
 export type TermOfferState = {
@@ -67,6 +68,7 @@ type Reader = Pick<PublicClient, "getBlock" | "readContract">;
 export async function readTermOffers(
   client: Reader,
   registry: Record<string, Address | null>,
+  expected?: { pool: Address; decimals: number },
 ): Promise<TermOffer[]> {
   const entries = Object.entries(registry);
   // One chain snapshot for all reads; a failed row cannot turn into an apparent zero-rate offer.
@@ -110,6 +112,8 @@ export async function readTermOffers(
           read<boolean>("settled"),
           read<number>("decimals"),
         ]);
+        if (expected && (decimals !== expected.decimals || (await read<Address>("lq")).toLowerCase() !== expected.pool.toLowerCase()))
+          return {...base, status:"unavailable", reason:"Term asset configuration does not match its pool"};
         // A first deposit into SLqToken locks minimum shares. A term must never be that first depositor.
         const vault = await read<Address>("stakedLq");
         const tracked = await read<bigint>("stakedShares");

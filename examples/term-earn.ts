@@ -1,7 +1,7 @@
 /** Connected-wallet examples. Importing this module never submits a transaction. */
 import { erc20Abi, type Address, type PublicClient, type WalletClient } from "viem";
 import {
-  LiquynClient, HYPEREVM_CHAIN_ID, lqUsdcAbi, termEarnRouterAbi,
+  LiquynClient, HYPEREVM_CHAIN_ID, lqUsdcAbi, termEarnRouterAbi, hypeTermEarnRouterAbi,
   readTermOffers, readTermPosition, termFace,
 } from "../src/index.ts";
 
@@ -22,17 +22,21 @@ async function approve(ctx: Context, token: Address, spender: Address, amount: b
   const receipt = await ctx.publicClient.waitForTransactionReceipt({ hash });
   if (receipt.status !== "success") throw new Error("Token approval reverted.");
 }
-async function routerContext(ctx: Context, term: Address) {
+async function routerContext(ctx: Context, term: Address, hype = false) {
   await checkWallet(ctx);
   const { contracts } = await (ctx.api ?? new LiquynClient()).status();
-  if (!contracts.termEarnRouter || !contracts.lqUSDC) throw new Error("The Earn router is not configured yet.");
-  if (!Object.values(contracts.termLocks).some(address => address?.toLowerCase() === term.toLowerCase())) throw new Error("Select a configured term.");
-  const router = contracts.termEarnRouter;
+  const configuredRouter = hype ? contracts.hypeTermEarnRouter : contracts.termEarnRouter;
+  const configuredPool = hype ? contracts.lqHYPE : contracts.lqUSDC;
+  const registry = hype ? contracts.termLocksHype : contracts.termLocks;
+  const abi = hype ? hypeTermEarnRouterAbi : termEarnRouterAbi;
+  if (!configuredRouter || !configuredPool || !registry) throw new Error("The Earn router is not configured yet.");
+  if (!Object.values(registry).some(address => address?.toLowerCase() === term.toLowerCase())) throw new Error("Select a configured term.");
+  const router = configuredRouter;
   const [supported, pool] = await Promise.all([
-    ctx.publicClient.readContract({ address: router, abi: termEarnRouterAbi, functionName: "supported", args: [term] }),
-    ctx.publicClient.readContract({ address: router, abi: termEarnRouterAbi, functionName: "lqUSDC" }),
+    ctx.publicClient.readContract({ address: router, abi, functionName: "supported", args: [term] }),
+    ctx.publicClient.readContract({ address: router, abi, functionName: hype ? "lqHYPE" : "lqUSDC" }),
   ]);
-  if (!supported || pool.toLowerCase() !== contracts.lqUSDC.toLowerCase()) throw new Error("Router/term configuration does not match the pool.");
+  if (!supported || pool.toLowerCase() !== configuredPool.toLowerCase()) throw new Error("Router/term configuration does not match the pool.");
   return { router, pool };
 }
 
@@ -78,5 +82,55 @@ export async function claimTerm(ctx: Context, term: Address, asset: "USDC" | "lq
   const hash = await ctx.walletClient.writeContract({ ...request, chain: ctx.walletClient.chain ?? null });
   const receipt = await ctx.publicClient.waitForTransactionReceipt({ hash });
   if (receipt.status !== "success") throw new Error("Claim reverted; term tokens remain in the wallet.");
+  return receipt;
+}
+
+/** Native HYPE or explicitly wrapped WHYPE; amounts are eighteen-decimal base units. */
+export async function depositTermHype(ctx: Context, term: Address, assets: bigint, source: "HYPE" | "WHYPE") {
+  if (assets <= 0n) throw new Error("Deposit must be positive, in HYPE base units.");
+  const {router} = await routerContext(ctx, term, true);
+  const [quoted] = await readTermOffers(ctx.publicClient, {selected:term});
+  if(quoted.status !== "open" || !quoted.state) throw new Error("This HYPE term is not open.");
+  const rate = quoted.state.fixedRateBps;
+  if(source === "WHYPE") {
+    const token = await ctx.publicClient.readContract({address:router,abi:hypeTermEarnRouterAbi,functionName:"whype"});
+    await approve(ctx,token,router,assets);
+  }
+  await checkWallet(ctx);
+  const [fresh] = await readTermOffers(ctx.publicClient, {selected:term});
+  if(fresh.status !== "open" || !fresh.state || fresh.state.fixedRateBps < rate) throw new Error("Offer changed; review it again.");
+  const deadline = (await ctx.publicClient.getBlock()).timestamp + 120n;
+  if(deadline >= fresh.state.maturity) throw new Error("Too close to maturity.");
+  const minFace = termFace(assets,rate,fresh.state.maturity,deadline);
+  let hash;
+  if (source === "HYPE") {
+    const {request} = await ctx.publicClient.simulateContract({address:router,abi:hypeTermEarnRouterAbi,functionName:"depositHype",args:[term,minFace,deadline],value:assets,account:ctx.account});
+    await checkWallet(ctx);
+    hash = await ctx.walletClient.writeContract({...request,chain:ctx.walletClient.chain??null});
+  } else {
+    const {request} = await ctx.publicClient.simulateContract({address:router,abi:hypeTermEarnRouterAbi,functionName:"depositWhype",args:[term,assets,minFace,deadline],account:ctx.account});
+    await checkWallet(ctx);
+    hash = await ctx.walletClient.writeContract({...request,chain:ctx.walletClient.chain??null});
+  }
+  const receipt=await ctx.publicClient.waitForTransactionReceipt({hash});
+  if(receipt.status !== "success") throw new Error("HYPE deposit reverted.");
+  return receipt;
+}
+/** Explicit HYPE, WHYPE or receipt choice; a failed cash claim never changes the asset. */
+export async function claimHypeTerm(ctx: Context, term: Address, output: "HYPE" | "WHYPE" | "lqHYPE") {
+  const {router,pool}=await routerContext(ctx,term,true);
+  const quoted=await readTermPosition(ctx.publicClient,term,ctx.account);
+  if(!quoted.mature || quoted.balance<=0n) throw new Error("No matured HYPE balance.");
+  await approve(ctx,term,router,quoted.balance);
+  await checkWallet(ctx);
+  const fresh=await readTermPosition(ctx.publicClient,term,ctx.account);
+  if(!fresh.mature || fresh.balance!==quoted.balance) throw new Error("Position changed; review it again.");
+  const minimum=output==="lqHYPE"?fresh.claimLq:await ctx.publicClient.readContract({address:pool,abi:lqUsdcAbi,functionName:"convertToAssets",args:[fresh.claimLq]});
+  const deadline=(await ctx.publicClient.getBlock()).timestamp+120n;
+  const {request}=await ctx.publicClient.simulateContract({address:router,abi:hypeTermEarnRouterAbi,functionName:output==="HYPE"?"claimHype":output==="WHYPE"?"claimWhype":"claimLq",args:[term,fresh.balance,minimum,deadline],account:ctx.account});
+  await checkWallet(ctx);
+  const hash=await ctx.walletClient.writeContract({...request,chain:ctx.walletClient.chain??null});
+  const receipt=await ctx.publicClient.waitForTransactionReceipt({hash});
+  if(receipt.status!=="success") throw new Error("Claim reverted; term tokens remain in the wallet.");
   return receipt;
 }

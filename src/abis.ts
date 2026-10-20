@@ -283,3 +283,15 @@ export const termEarnRouterAbi = parseAbi([
   "function claimUsdc(address term, uint256 face, uint256 minUsdc, uint256 deadline) returns (uint256 assets)",
   "function claimLq(address term, uint256 face, uint256 minLq, uint256 deadline) returns (uint256 assets)",
 ]);
+
+/** Native HYPE and WHYPE entry, plus explicit maturity exit assets. */
+export const hypeTermEarnRouterAbi = parseAbi([
+  "function whype() view returns (address)",
+  "function lqHYPE() view returns (address)",
+  "function supported(address term) view returns (bool)",
+  "function depositHype(address term, uint256 minFace, uint256 deadline) payable returns (uint256 face)",
+  "function depositWhype(address term, uint256 assets, uint256 minFace, uint256 deadline) returns (uint256 face)",
+  "function claimHype(address term, uint256 face, uint256 minHype, uint256 deadline) returns (uint256 assets)",
+  "function claimWhype(address term, uint256 face, uint256 minWhype, uint256 deadline) returns (uint256 assets)",
+  "function claimLq(address term, uint256 face, uint256 minLq, uint256 deadline) returns (uint256 assets)",
+]);

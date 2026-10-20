@@ -192,3 +192,15 @@ for (const functionName of ["depositUsdc", "claimUsdc", "claimLq"] as const) {
   assert.deepEqual(decoded.args, args);
 }
 console.log("Term Earn router calldata round trips pass");
+
+const {encodeFunctionData:encodeHype,decodeFunctionData:decodeHype} = await import("viem");
+const {hypeTermEarnRouterAbi} = await import("../src/abis.ts");
+const hypeCalldata=encodeHype({abi:hypeTermEarnRouterAbi,functionName:"depositHype",args:[address,10n**18n,1200n]});
+assert.equal(decodeHype({abi:hypeTermEarnRouterAbi,data:hypeCalldata}).functionName,"depositHype");
+const mismatch=await readTermOffers(client,{DEC26:address},{pool:address,decimals:18});
+assert.equal(mismatch[0].status,"unavailable");
+const hypeState={...state,decimals:18,capacity:100n*10n**18n,totalFace:0n,totalCover:10n*10n**18n};
+assert.equal(termOfferAvailability(hypeState,1000n).status,"open");
+const hypeAmount=10n**18n+1n;
+assert(termFace(hypeAmount,500,2000n,1000n)>=hypeAmount);
+console.log("HYPE ABI, eighteen-decimal face and cross-asset configuration guards pass");

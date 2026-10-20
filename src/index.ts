@@ -1,6 +1,6 @@
 export { LiquynClient, LiquynApiError, DEFAULT_BASE_URL, type LiquynClientOptions } from "./client.ts";
 export * from "./types.ts";
-export { fixedTermPoolAbi, priceFeedAbi, termRfqAbi, termLockAbi, termEarnRouterAbi, lqExitDeskAbi, partnerTermsAbi, lqUsdcAbi, sLqUsdcAbi } from "./abis.ts";
+export { fixedTermPoolAbi, priceFeedAbi, termRfqAbi, termLockAbi, termEarnRouterAbi, hypeTermEarnRouterAbi, lqExitDeskAbi, partnerTermsAbi, lqUsdcAbi, sLqUsdcAbi } from "./abis.ts";
 export {
   ANY_TAKER, RFQ_DOMAIN_NAME, RFQ_DOMAIN_VERSION, rfqDomain, rfqTypes, hashQuote, signQuote, fillQuote, cancelQuote, cancelQuotesBelow,
   type RfqQuote,
