@@ -1,6 +1,6 @@
 {
   "name": "@liquyn/sdk",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "TypeScript client, ABIs, RFQ signing and loan math for Liquyn's fixed-term markets on HyperEVM.",
   "type": "module",
   "main": "./dist/index.js",

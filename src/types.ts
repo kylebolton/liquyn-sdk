@@ -141,6 +141,7 @@ export type StatusResponse = {
     termLocks: { DEC26: Address | null; MAR27: Address | null; JUN27: Address | null };
     lqUSDC: Address | null; sLqUSDC: Address | null; lqHYPE: Address | null; sLqHYPE: Address | null; feeSplitter: Address | null;
     borrowToCore: Address | null; termRfq: Address | null; partnerTerms: Address | null; lqUsdcExitDesk: Address | null; liqynFeeRewards: Address | null;
+    lqHypeExitDesk?: Address | null; ratesVault?: Address | null;
   };
 };
 

@@ -207,8 +207,8 @@ Chain head, price-feed freshness per feed, and the contract addresses integrator
   "markets": { "configured": 9, "readable": 9 },
   "contracts": {
     "lqUSDC": "0x…", "sLqUSDC": "0x…", "lqHYPE": "0x…", "sLqHYPE": "0x…",
-    "feeSplitter": "0x…", "borrowToCore": "0x…",
-    "termRfq": null, "partnerTerms": null, "lqUsdcExitDesk": null, "liqynFeeRewards": null
+    "feeSplitter": "0x…", "borrowToCore": "0x…", "idleUsdcAdapter": "0x…",
+    "termRfq": null, "partnerTerms": null, "lqUsdcExitDesk": null, "lqHypeExitDesk": null, "ratesVault": null, "liqynFeeRewards": null
   }
 }
 ```

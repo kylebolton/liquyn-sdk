@@ -237,6 +237,9 @@ export const lqUsdcAbi = parseAbi([
   "function pools(uint256 index) view returns (address)",
   "function isPool(address pool) view returns (bool)",
   "function idleAdapter() view returns (address)",
+  "function autoStake() view returns (bool)",
+  "function minAutoStake() view returns (uint256)",
+  "function stakeable() view returns (uint256)",
   "function deposit(uint256 assets, uint256 minShares) returns (uint256 shares)",
   "function redeem(uint256 shares, uint256 minAssets) returns (uint256 assets)",
   "function harvest(address pool) returns (uint256 assets)",
@@ -294,4 +297,21 @@ export const hypeTermEarnRouterAbi = parseAbi([
   "function claimHype(address term, uint256 face, uint256 minHype, uint256 deadline) returns (uint256 assets)",
   "function claimWhype(address term, uint256 face, uint256 minWhype, uint256 deadline) returns (uint256 assets)",
   "function claimLq(address term, uint256 face, uint256 minLq, uint256 deadline) returns (uint256 assets)",
+]);
+
+/**
+ * HyperCoreUsdcAdapter: where lqUSDC's idle USDC goes. `bridgeAll` and `supplyAll` are public and can only move USDC into the
+ * adapter's own HyperCore account and lending position; both revert with `UNWINDING` while the owner is withdrawing.
+ */
+export const hyperCoreUsdcAdapterAbi = parseAbi([
+  "function pool() view returns (address)",
+  "function totalAssets() view returns (uint256)",
+  "function held() view returns (uint256)",
+  "function supplied() view returns (uint256)",
+  "function unwinding() view returns (bool)",
+  "function accruedFees() view returns (uint256)",
+  "function feeBps() view returns (uint16)",
+  "function MIN_PUBLIC_BRIDGE() view returns (uint256)",
+  "function bridgeAll() returns (uint256 amount)",
+  "function supplyAll()",
 ]);

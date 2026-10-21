@@ -10,6 +10,7 @@ The contracts are unaudited, and everything the API returns is indicative. Read 
 | --- | --- |
 | `LiquynClient` | Typed `fetch` client for `/api/v1`: `markets()`, `curve()`, `quote(market, amount)`, `positions(market)`, `status()`. The default base URL is `https://www.liquyn.com`. Errors throw `LiquynApiError` with `status` and `code`. |
 | `fixedTermPoolAbi` | FixedTermPool version 4, including `borrowVia`, `configureTerms`, `terms`, `termsLocked`, `principalOf`, `integratorOf`, `rewards` and the liquidation auction. Older pools lack the partner functions. |
+| `hyperCoreUsdcAdapterAbi`, `readIdleUsdc(client, contracts, usdc)` | The idle-USDC adapter ABI, and a read of auto-stake settings, stakeable USDC, what is held and supplied on HyperCore, and whether the owner is unwinding. Deposits stage themselves above the cash floor; anyone can call `bridgeAll` then `supplyAll`. The bridge-then-supply timing is unverified, so do not assume one call follows the other immediately. |
 | `termEarnRouterAbi` | Atomic USDC deposits and explicit USDC/lqUSDC maturity claims. The router address is optional until deployment and app configuration. |
 | `readTermOffers`, `termOfferAvailability` | Snapshot term offers and calculate capacity/cover headroom. The reader also checks funded cover and staking initialization/accounting. |
 | `readTermPosition` | Wallet term balance, maturity/settlement status and an indicative lqUSDC claim preview. Failed reads reject rather than reporting zero. |
