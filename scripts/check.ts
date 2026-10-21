@@ -107,4 +107,10 @@ assert.deepEqual(decoded.args?.[0], quote);
 assert.equal(decoded.args?.[2], quote.buyAmount);
 assert.equal(decoded.args?.[3], usdc(98_800));
 
+// The idle-USDC ABIs carry the auto-stake and public bridge/supply entry points.
+import { hyperCoreUsdcAdapterAbi, lqUsdcAbi } from "../src/abis.ts";
+const names = (abi: readonly { type: string; name?: string }[]) => abi.filter((item) => item.type === "function").map((item) => item.name);
+for (const fn of ["autoStake", "minAutoStake", "stakeable"]) assert.ok(names(lqUsdcAbi).includes(fn), `lqUsdcAbi has ${fn}`);
+for (const fn of ["bridgeAll", "supplyAll", "unwinding", "held", "supplied", "feeBps"]) assert.ok(names(hyperCoreUsdcAdapterAbi).includes(fn), `hyperCoreUsdcAdapterAbi has ${fn}`);
+
 console.log("sdk check: all assertions passed");
